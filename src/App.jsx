@@ -3,14 +3,21 @@ import { useState } from "react";
 import Player from "./components/Player";
 import GameBoard from "./components/GameBoard";
 import Log from "./components/Log";
-
+import GameOver from "./components/GameOver";
 import { WINNING_COMBINATIONS } from "./winningConditions";
 
-let initialGameBord = [
+
+const PLAYERS = {
+  X: 'Player 1',
+  O: 'Player 2'
+}
+
+let INITIAL_GAME_BOARD= [
   [null, null, null],
   [null, null, null],
   [null, null, null],
 ];
+// The trick on this application is to derive the gameBoard settings for the player from the gameTurns
 
 function activeDerivedPlayer(gameTurns) {
   let currentPlayer = "X";
@@ -21,28 +28,60 @@ function activeDerivedPlayer(gameTurns) {
   return currentPlayer;
 }
 
-function App() {
+function deriveWinner(gameBoard, players) {
+  let winner;
+  for (const combination of WINNING_COMBINATIONS) {
+    const firstSquareSymbol =
+      gameBoard[combination[0].row][combination[0].column];
+    // This is the place were we get the winner
+    const secondSquareSymbol =
+      gameBoard[combination[1].row][combination[1].column];
+    const thirdSquareSymbol =
+      gameBoard[combination[2].row][combination[2].column];
 
-  const [gameTurns, setGameTurns] = useState([]);
+    if (
+      firstSquareSymbol &&
+      // The winner is equal to the second and third combination
+      firstSquareSymbol === secondSquareSymbol &&
+      firstSquareSymbol === thirdSquareSymbol
+    ) {
+      winner = players[firstSquareSymbol];
+      // We use this information to set our dynamically derived winning player
+      // it's a bittle lit tricky
+    }
+  }
+  return winner;
+}
 
-  let activePlayer = activeDerivedPlayer(gameTurns);
+function deriveGameBoard(gameTurns) {
+  // initialGameBorad is set globally, we need gameTurns that is yet undefinde as a parameter
 
-  const gameBoard = initialGameBord;
-  // gameBoard is a copy of initialGameboard
+  const gameBoard = [...INITIAL_GAME_BOARD.map((innerArray) => [...innerArray])];
 
-  for(let turn of gameTurns) {
-    
+  for (let turn of gameTurns) {
     const { square, player } = turn;
     const { row, col } = square;
 
     gameBoard[row][col] = player;
   }
 
-  for(const combination of WINNING_COMBINATIONS) {
-    const firstSquareSymbol = gameBoard[combination[0].row][combination[0].column]
-    const secondSquareSymbol = gameBoard[combination[1].row][combination[1].column]
-    const thirdSquareSymbol = gameBoard[combination[2].row][combination[2].column]
-  }
+  return gameBoard;
+}
+
+function App() {
+
+  const [players, setPlayers] = useState(PLAYERS);
+
+  const [gameTurns, setGameTurns] = useState([]);
+  // These are the GameTurns, not the GameBoard
+
+  let activePlayer = activeDerivedPlayer(gameTurns);
+
+  const gameBoard = deriveGameBoard(gameTurns);
+
+  const winner = deriveWinner(gameBoard, players);
+
+  const hasDraw = gameTurns.length === 9 && !winner;
 
   // const [activePlayer, setActivePlayer] = useState("X");
 
@@ -50,7 +89,6 @@ function App() {
     // setActivePlayer((curActivePlayer) => (curActivePlayer === "X" ? "O" : "X"));
 
     setGameTurns((prevTurns) => {
-
       let currentPlayer = activeDerivedPlayer(prevTurns);
 
       const updatedTurns = [
@@ -61,21 +99,43 @@ function App() {
     });
   }
 
+  function handleReset() {
+    setGameTurns([]);
+  }
+
+  function handlePlayerNameChange(symbol, newName) {
+    setPlayers((prevPlayers) => {
+      return {
+        ...prevPlayers,
+        [symbol]: newName,
+        // brackets means that symbol is set as newName, (symbol is a dynamic property,
+        // the value is not known before)
+      };
+    });
+  }
+
   return (
     <main>
       <div id="game-container">
         <ol id="players" className="highlight-player">
           <Player
-            initialName="Player 1"
+            initialName={PLAYERS.X}
             symbol="X"
             isActive={activePlayer === "X"}
+            onChangeName={handlePlayerNameChange}
           />
           <Player
-            initialName="Player 2"
+            initialName={PLAYERS.O}
             symbol="O"
             isActive={activePlayer === "O"}
+            onChangeName={handlePlayerNameChange}
           />
         </ol>
+        {(winner || hasDraw) && (
+          <h3>
+            <GameOver onRestart={handleReset} winner={winner} />
+          </h3>
+        )}
         <GameBoard onSelectSquare={handleSelectSquare} board={gameBoard} />
       </div>
       <Log turns={gameTurns} />
