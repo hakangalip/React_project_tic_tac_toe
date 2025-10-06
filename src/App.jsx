@@ -6,13 +6,12 @@ import Log from "./components/Log";
 import GameOver from "./components/GameOver";
 import { WINNING_COMBINATIONS } from "./winningConditions";
 
-
 const PLAYERS = {
-  X: 'Player 1',
-  O: 'Player 2'
-}
+  X: "Player 1",
+  O: "Player 2",
+};
 
-let INITIAL_GAME_BOARD= [
+let INITIAL_GAME_BOARD = [
   [null, null, null],
   [null, null, null],
   [null, null, null],
@@ -26,6 +25,22 @@ function activeDerivedPlayer(gameTurns) {
     currentPlayer = "O";
   }
   return currentPlayer;
+}
+
+function deriveGameBoard(gameTurns) {
+  const gameBoard = [
+    ...INITIAL_GAME_BOARD.map((innerArray) => [...innerArray]),
+  ];
+
+  for (let turn of gameTurns) {
+    const { square, player } = turn;
+    const { row, col } = square;
+
+    gameBoard[row][col] = player;
+  }
+  return gameBoard;
+  // We bring the game board and the game turns together
+  // The board will updated, but the origin address in memory stays like it is
 }
 
 function deriveWinner(gameBoard, players) {
@@ -53,23 +68,8 @@ function deriveWinner(gameBoard, players) {
   return winner;
 }
 
-function deriveGameBoard(gameTurns) {
-  // initialGameBorad is set globally, we need gameTurns that is yet undefinde as a parameter
-
-  const gameBoard = [...INITIAL_GAME_BOARD.map((innerArray) => [...innerArray])];
-
-  for (let turn of gameTurns) {
-    const { square, player } = turn;
-    const { row, col } = square;
-
-    gameBoard[row][col] = player;
-  }
-
-  return gameBoard;
-}
-
 function App() {
-
+  
   const [players, setPlayers] = useState(PLAYERS);
 
   const [gameTurns, setGameTurns] = useState([]);
@@ -89,6 +89,7 @@ function App() {
     // setActivePlayer((curActivePlayer) => (curActivePlayer === "X" ? "O" : "X"));
 
     setGameTurns((prevTurns) => {
+
       let currentPlayer = activeDerivedPlayer(prevTurns);
 
       const updatedTurns = [
